@@ -111,14 +111,14 @@ namespace Hardware {
         Result ret = 0;
         u8 data;
         const char *mode[] =  {
-            "Mono",
-            "Stereo",
-            "Surround"
+            "单声道",
+            "立体声",
+            "环绕声"
         };
         
         if (R_FAILED(ret = CFGU_GetConfigInfoBlk2(sizeof(data), 0x00070001, std::addressof(data)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         return mode[data];
@@ -146,9 +146,9 @@ namespace Hardware {
         AutoBrightnessBlock autoBrightnessBlock;
         
         if (R_FAILED(CFG_GetConfigInfoBlk8(sizeof(AutoBrightnessBlock), 0x00050009, std::addressof(autoBrightnessBlock)))) {
-            return "unknown";
+            return "未知";
         }
         
-        return autoBrightnessBlock.autoBrightnessEnabled? "enabled" : "disabled";
+        return autoBrightnessBlock.autoBrightnessEnabled? "已启用" : "未启用";
     }
 }

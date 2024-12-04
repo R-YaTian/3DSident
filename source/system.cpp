@@ -21,7 +21,7 @@ namespace System {
         u8 model = 0;
         if (R_FAILED(ret = CFGU_GetSystemModel(std::addressof(model)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
         
         return models[model];
@@ -42,7 +42,7 @@ namespace System {
         u8 region = 0;
         if (R_FAILED(ret = CFGU_SecureInfoGetRegion(std::addressof(region)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         return regions[region];
@@ -63,7 +63,7 @@ namespace System {
         u8 region = 0;
         if (R_FAILED(ret = CFGU_SecureInfoGetRegion(std::addressof(region)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         return regions[region];
@@ -101,7 +101,7 @@ namespace System {
         u8 language = 0;
         if (R_FAILED(ret = CFGU_GetSystemLanguage(std::addressof(language)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         return languages[language];
@@ -116,7 +116,7 @@ namespace System {
 
     const char *GetRunningHW(void) {
         const char *runningHW[] = {
-            "unknown",
+            "未知",
             "product",
             "TS board",
             "KMC debugger",
@@ -171,19 +171,19 @@ namespace System {
         }
         else {
             FS::CloseArchive(nandArchive);
-            return "LocalFriendCodeSeed not found";
+            return "LFC 种子文件未找到";
         }
         
         if (R_FAILED(ret = FSFILE_Read(handle, std::addressof(bytesread), 0x108, reinterpret_cast<u32 *>(buf), 6))) {
             Log::Error("%s(FSFILE_Read) failed: 0x%x\n", __func__, ret);
             FS::CloseArchive(nandArchive);
-            return "unknown";
+            return "未知";
         }
         
         if (R_FAILED(ret = FSFILE_Close(handle))) {
             Log::Error("%s(FSFILE_Close) failed: 0x%x\n", __func__, ret);
             FS::CloseArchive(nandArchive);
-            return "unknown";
+            return "未知";
         }
 
         FS::CloseArchive(nandArchive);

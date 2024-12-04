@@ -35,7 +35,7 @@ namespace NNID {
 
         if (R_FAILED(ret = ACTU::GetAccountDataBlock(0xFE, 0x8, sizeof(accountId), accountId))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         return accountId;
@@ -48,7 +48,7 @@ namespace NNID {
 
         if (R_FAILED(ret = ACTU::GetAccountDataBlock(0xFE, 0xB, sizeof(countryName), countryName))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         return countryName;
@@ -73,7 +73,7 @@ namespace NNID {
 
         if (R_FAILED(ret = ACTU::GetAccountDataBlock(0xFE, 0x1C, sizeof(nfsPassword), nfsPassword))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         return nfsPassword;

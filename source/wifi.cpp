@@ -11,7 +11,7 @@ namespace Wifi {
         
         if (R_FAILED(ret = ACI_GetNetworkWirelessEssidSecuritySsid(ssid))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
         
         return ssid;
@@ -23,7 +23,7 @@ namespace Wifi {
         
         if (R_FAILED(ret = ACI::GetPassphrase(passphrase))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
         
         return passphrase;
@@ -34,7 +34,7 @@ namespace Wifi {
         acSecurityMode mode = AC_OPEN;
 
         const char *securityMode[] = {
-            "not secured",
+            "未加密",
             "WEP 40-bit",
             "WEP 104-bit",
             "WEP 128-bit",
@@ -46,7 +46,7 @@ namespace Wifi {
 
         if (R_FAILED(ret = ACI::GetSecurityMode(std::addressof(mode)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         return securityMode[mode];

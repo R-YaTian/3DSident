@@ -40,7 +40,7 @@ namespace Config {
         
         if (R_FAILED(ret = CFGU_GetConfigInfoBlk2(sizeof(UsernameBlock), 0x000A0000, std::addressof(usernameBlock)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         static u8 username[10];
@@ -54,12 +54,12 @@ namespace Config {
 
         if (R_FAILED(ret = CFGU_GetConfigInfoBlk2(sizeof(BirthdayBlock), 0x000A0001, std::addressof(birthdayBlock)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
         
         const char *months[] = {
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
+            "一月", "二月", "三月", "四月", "五月", "六月",
+            "七月", "八月", "九月", "十月", "十一月", "十二月"
         };
 
         static char date[15];
@@ -73,7 +73,7 @@ namespace Config {
 
         if (R_FAILED(ret = CFGU_GetConfigInfoBlk2(sizeof(EulaVersionBlock), 0x000D0000, std::addressof(eulaVersionBlock)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         static char version[6];
@@ -87,7 +87,7 @@ namespace Config {
         
         if (R_FAILED(ret = CFG_GetConfigInfoBlk8(sizeof(ParentalControlBlock), 0x00100001, std::addressof(parentalControlBlock)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
         
         static char pin[5];
@@ -102,7 +102,7 @@ namespace Config {
 
         if (R_FAILED(ret = CFGU_GetConfigInfoBlk2(sizeof(data), 0x000C0002, data))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         static char email[0x200];
@@ -116,7 +116,7 @@ namespace Config {
 
         if (R_FAILED(ret = CFG_GetConfigInfoBlk8(sizeof(ParentalControlBlock), 0x00100001, std::addressof(parentalControlBlock)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
-            return "unknown";
+            return "未知";
         }
 
         static u8 out[128];
@@ -128,9 +128,9 @@ namespace Config {
         BacklightControlBlock backlightControlBlock;
         
         if (R_FAILED(CFG_GetConfigInfoBlk8(sizeof(BacklightControlBlock), 0x00050001, std::addressof(backlightControlBlock)))) {
-            return "unknown";
+            return "未知";
         }
 
-        return backlightControlBlock.powerSavingEnabled? "enabled" : "disabled";
+        return backlightControlBlock.powerSavingEnabled? "已启用" : "未启用";
     }
 }

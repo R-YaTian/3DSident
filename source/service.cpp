@@ -144,7 +144,9 @@ namespace Service {
         info.region = System::GetRegion();
         info.language = System::GetLanguage();
         info.localFriendCodeSeed = System::GetLocalFriendCodeSeed();
+#if !defined BUILD_CITRA
         info.nandLocalFriendCodeSeed = System::GetNandLocalFriendCodeSeed();
+#endif
         info.macAddress = System::GetMacAddress();
         info.serialNumber = System::GetSerialNumber();
         info.checkDigit =  System::GetCheckDigit(info.serialNumber);
@@ -181,14 +183,14 @@ namespace Service {
         Hardware::GetScreenType(top, bottom);
 
         if (top == GSPLCD_SCREEN_UNK) {
-            info.screenUpper = "unknown";
+            info.screenUpper = "未知";
         }
         else {
             info.screenUpper = (top == GSPLCD_SCREEN_TN)? "TN" : "IPS";
         }
 
         if (bottom == GSPLCD_SCREEN_UNK) {
-            info.screenLower = "unknown";
+            info.screenLower = "未知";
         }
         else {
             info.screenLower = (bottom == GSPLCD_SCREEN_TN)? "TN" : "IPS";

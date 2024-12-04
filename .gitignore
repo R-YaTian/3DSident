@@ -4,7 +4,9 @@
 
 # 3DS
 build/
-romfs/
+romfs/res/
 *.3dsx
 *.smdh
 *.cia
+
+.vscode/
