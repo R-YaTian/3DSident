@@ -412,7 +412,7 @@ namespace GUI {
             C2D_DrawRectSolid(115, 122, guiTexSize, 190, 5, guiButtonTesterSliderBorder);
             C2D_DrawRectSolid(115, 122, guiTexSize, ((_3dSliderPercent / 100) * 190), 5, guiButtonTesterSlider);
             
-            GUI::DrawText(90, 138, 0.45f, guiButtonTesterText, "按 L + R 以返回");
+            GUI::DrawText(90, 138, 0.45f, guiButtonTesterText, "按 L + R 返回");
 
 #if !defined BUILD_CITRA
             SystemStateInfo info = Service::GetSystemStateInfo();

@@ -84,18 +84,18 @@ namespace System {
     const char *GetLanguage(void) {
         Result ret = 0;
         const char *languages[] = {
-            "Japanese",
-            "English",
-            "French",
-            "German",
-            "Italian",
-            "Spanish",
-            "Simplified Chinese",
-            "Korean",
-            "Dutch",
-            "Portugese",
-            "Russian",
-            "Traditional Chinese"
+            "日语",
+            "英语",
+            "法语",
+            "德语",
+            "意大利语",
+            "西班牙语",
+            "简体中文",
+            "韩语",
+            "荷兰语",
+            "葡萄牙语",
+            "俄语",
+            "繁体中文"
         };
 
         u8 language = 0;
