@@ -205,6 +205,7 @@ namespace Service {
         info.sdTitleCount = Misc::GetTitleCount(MEDIATYPE_SD);
         info.nandTitleCount = Misc::GetTitleCount(MEDIATYPE_NAND);
         info.ticketCount = Misc::GetTicketCount();
+        info.manufacturingDate = Misc::GetManufacturingDate();
         return info;
     }
 

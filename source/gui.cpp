@@ -113,9 +113,15 @@ namespace GUI {
 
     static void GetTextDimensions(float size, float *width, float *height, const char *text) {
         C2D_Text c2dText;
-        float scale = font ? size * 1.1f : size;
-        C2D_TextParse(&c2dText, guiSizeBuf, text);
-        C2D_TextGetDimensions(&c2dText, scale, scale, width, height);
+		if (font)
+            C2D_TextFontParse(&c2dText, font, guiSizeBuf, text);
+        else
+            C2D_TextParse(&c2dText, guiSizeBuf, text);
+#if BUILD_CITRA
+        C2D_TextGetDimensions(&c2dText, size * 1.23f, size, width, height);
+#else
+        C2D_TextGetDimensions(&c2dText, size, size, width, height);
+#endif
     }
 
     static void DrawText(float x, float y, float size, u32 colour, const char *text) {
@@ -323,15 +329,16 @@ namespace GUI {
     }
 
     static void MiscInfoPage(const MiscInfo &info, bool &displayInfo) {
-        GUI::DrawItemf(1, "已安装内容:", "SD: %lu (NAND: %lu)", info.sdTitleCount, info.nandTitleCount);
-        GUI::DrawItemf(2, "已安装票据:", "%lu", info.ticketCount);
+        GUI::DrawItem(1, "制造日期:", info.manufacturingDate);
+        GUI::DrawItemf(2, "已安装内容:", "SD: %lu (NAND: %lu)", info.sdTitleCount, info.nandTitleCount);
+        GUI::DrawItemf(3, "已安装票据:", "%lu", info.ticketCount);
 
         u8 wifiStrength = osGetWifiStrength();
-        GUI::DrawItemf(3, "WiFi 信号强度:", "%d (%.0lf%%)", wifiStrength, static_cast<float>(wifiStrength * 33.33));
-        
+        GUI::DrawItemf(4, "WiFi 信号强度:", "%d (%.0lf%%)", wifiStrength, static_cast<float>(wifiStrength * 33.33));
+
         char hostname[128];
         gethostname(hostname, sizeof(hostname));
-        GUI::DrawItem(4, "IP:", displayInfo? hostname : "");
+        GUI::DrawItem(5, "IP:", displayInfo? hostname : "");
     }
 
     static void DrawControllerImage(int keys, C2D_Image button, int defaultX, int defaultY, int keyLeft, int keyRight, int keyUp, int keyDown) {
