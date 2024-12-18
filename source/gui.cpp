@@ -117,11 +117,7 @@ namespace GUI {
             C2D_TextFontParse(&c2dText, font, guiSizeBuf, text);
         else
             C2D_TextParse(&c2dText, guiSizeBuf, text);
-#if BUILD_CITRA
-        C2D_TextGetDimensions(&c2dText, size * 1.23f, size, width, height);
-#else
         C2D_TextGetDimensions(&c2dText, size, size, width, height);
-#endif
     }
 
     static void DrawText(float x, float y, float size, u32 colour, const char *text) {
