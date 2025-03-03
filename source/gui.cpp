@@ -67,9 +67,6 @@ namespace GUI {
         Log::Open();
 #endif
         // Real time services
-#if !defined BUILD_CITRA
-        mcuHwcInit();
-#endif
         ptmuInit();
         cfguInit();
         dspInit();
@@ -81,9 +78,6 @@ namespace GUI {
         dspExit();
         cfguExit();
         ptmuExit();
-#if !defined BUILD_CITRA
-        mcuHwcExit();
-#endif
 #if defined BUILD_DEBUG
         Log::Close();
 #endif
@@ -199,6 +193,7 @@ namespace GUI {
     }
 
     static void BatteryInfoPage(const SystemStateInfo &info) {
+        mcuHwcInit();
         Result ret = 0;
         u8 percentage = 0, status = 0, voltage = 0, fwVerHigh = 0, fwVerLow = 0, temp = 0;
         bool connected = false;
@@ -225,16 +220,15 @@ namespace GUI {
         GUI::DrawItemf(6, "PMIC 厂商代码:", "%x", info.pmicVendorCode);
 
         GUI::DrawItemf(7, "电池厂商代码:", "%x", info.batteryVendorCode);
+        mcuHwcExit();
     }
 
     static void NNIDInfoPage(const NNIDInfo &info, bool &displayInfo) {
         GUI::DrawItemf(1, "持久化 ID:", "%u", displayInfo? info.persistentID : 0);
         GUI::DrawItemf(2, "可转移 ID 凭据:", "%llu", displayInfo? info.transferableIdBase : 0);
         GUI::DrawItemf(3, "主 ID:", "%u", displayInfo? info.principalID : 0);
-        // The following are not functioning 
-        // GUI::DrawItem(4, "Account ID:", info.accountId);
-        // GUI::DrawItem(5, "Country:", displayInfo? info.countryName : "");
-        // GUI::DrawItem(6, "NFS Password:", displayInfo? info.nfsPassword : "");
+        GUI::DrawItemf(4, "账户 ID:", "%s (%s)", info.accountId, info.status);
+        GUI::DrawItem(5, "国家/地区:", displayInfo? info.countryName : "");
     }
 
     static void ConfigInfoPage(const ConfigInfo &info, bool &displayInfo) {

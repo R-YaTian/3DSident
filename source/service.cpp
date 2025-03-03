@@ -16,13 +16,13 @@ namespace ACI {
     Result GetSecurityMode(acSecurityMode *mode) {
         Result ret = 0;
         u32 *cmdbuf = getThreadCommandBuffer();
-        
+
         cmdbuf[0] = IPC_MakeHeader(0x413,0,0); // 0x04130000
-        
+
         if (R_FAILED(ret = svcSendSyncRequest(*acGetSessionHandle()))) {
             return ret;
         }
-        
+
         *mode = static_cast<acSecurityMode>(cmdbuf[2]);
         return static_cast<Result>(cmdbuf[1]);
     }
@@ -30,13 +30,13 @@ namespace ACI {
     Result GetPassphrase(char *passphrase) {
         Result ret = 0;
         u32 *cmdbuf = getThreadCommandBuffer();
-        
+
         cmdbuf[0] = IPC_MakeHeader(0x415,0,0); // 0x04150000
-        
+
         u32* staticbufs = getThreadStaticBuffers();
         staticbufs[0] = IPC_Desc_StaticBuffer(64, 0); // Password length is 64
         staticbufs[1] = reinterpret_cast<u32>(passphrase);
-        
+
         if (R_FAILED(ret = svcSendSyncRequest(*acGetSessionHandle()))) {
             return ret;
         }
@@ -48,24 +48,20 @@ namespace ACI {
 namespace ACTU {
     static Handle actHandle;
     static int actRefCount;
-    
+
     Result Init(void) {
         Result ret = 0;
-        
+
         if (AtomicPostIncrement(std::addressof(actRefCount))) {
             return 0;
         }
-        
+
         ret = srvGetServiceHandle(std::addressof(actHandle), "act:u");
-        
-        if (R_FAILED(ret)) {
-            ret = srvGetServiceHandle(std::addressof(actHandle), "act:a");
-        }
-        
+
         if (R_FAILED(ret)) {
             AtomicDecrement(std::addressof(actRefCount));
         }
-        
+
         return ret;
     }
 
@@ -73,25 +69,44 @@ namespace ACTU {
         if (AtomicDecrement(std::addressof(actRefCount))) {
             return;
         }
-        
+
         svcCloseHandle(actHandle);
     }
 
-    Result GetAccountDataBlock(u8 slot, u32 size, u32 blkId, void *out) {
+    Result Initialize(u32 sdkVersion, u32 memSize, Handle handle) {
         Result ret = 0;
         u32 *cmdbuf = getThreadCommandBuffer();
-        
+
+        cmdbuf[0] = IPC_MakeHeader(0x1,2,4); // 0x00010084
+        cmdbuf[1] = sdkVersion;
+        cmdbuf[2] = memSize;
+        cmdbuf[3] = 0x20;
+        cmdbuf[4] = 0x0;
+        cmdbuf[5] = 0x0;
+        cmdbuf[6] = handle;
+
+        if ((ret = svcSendSyncRequest(actHandle)) != 0) {
+            return ret;
+        }
+
+        return static_cast<Result>(cmdbuf[1]);
+    }
+
+    Result GetAccountInfo(u8 slot, u32 size, u32 blkId, void *out) {
+        Result ret = 0;
+        u32 *cmdbuf = getThreadCommandBuffer();
+
         cmdbuf[0] = IPC_MakeHeader(0x6,3,2); // 0x00600C2
         cmdbuf[1] = slot;
         cmdbuf[2] = size;
         cmdbuf[3] = blkId;
         cmdbuf[4] = IPC_Desc_Buffer(size,IPC_BUFFER_W);
         cmdbuf[5] = reinterpret_cast<u32>(out);
-        
+
         if (R_FAILED(ret = svcSendSyncRequest(actHandle))) {
             return ret;
         }
-        
+
         return static_cast<Result>(cmdbuf[1]);
     }
 }
@@ -100,13 +115,13 @@ namespace MCUHWC {
     Result GetBatteryTemperature(u8 *temp) {
         Result ret = 0;
         u32 *cmdbuf = getThreadCommandBuffer();
-        
+
         cmdbuf[0] = IPC_MakeHeader(0xE,2,0); // 0x000E0080
-        
+
         if (R_FAILED(ret = svcSendSyncRequest(*mcuHwcGetSessionHandle()))) {
             return ret;
         }
-        
+
         *temp = cmdbuf[2];
         return static_cast<Result>(cmdbuf[1]);
     }
@@ -116,6 +131,7 @@ namespace Service {
     void Init(void) {
         acInit();
         ACTU::Init();
+        ACTU::Initialize(0xB0002F0, 0, 0);
         amInit();
     }
 
@@ -153,7 +169,7 @@ namespace Service {
         info.soapId = System::GetSoapId();
         return info;
     }
-    
+
     NNIDInfo GetNNIDInfo(void) {
         NNIDInfo info = { 0 };
         info.persistentID = NNID::GetPersistentId();
@@ -161,7 +177,7 @@ namespace Service {
         info.accountId = NNID::GetAccountId();
         info.countryName = NNID::GetCountryName();
         info.principalID = NNID::GetPrincipalId();
-        info.nfsPassword = NNID::GetNfsPassword();
+        info.status = NNID::IsServerAccountDeleted();
         return info;
     }
 
@@ -226,7 +242,7 @@ namespace Service {
 
     StorageInfo GetStorageInfo(void) {
         StorageInfo info = { 0 };
-        
+
         for (int i = 0; i < 4; i++) {
             info.usedSize[i] = Storage::GetUsedStorage(static_cast<FS_SystemMediaType>(i));
             info.totalSize[i] = Storage::GetTotalStorage(static_cast<FS_SystemMediaType>(i));
@@ -239,12 +255,15 @@ namespace Service {
     }
 
     SystemStateInfo GetSystemStateInfo(void) {
+        mcuHwcInit();
         SystemStateInfo info = { 0 };
 
         if (R_FAILED(MCUHWC_ReadRegister(0x7F, std::addressof(info), sizeof(SystemStateInfo)))) {
+            mcuHwcExit();
             return info;
         }
 
+        mcuHwcExit();
         return info;
     }
 }
