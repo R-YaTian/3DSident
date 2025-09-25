@@ -94,9 +94,7 @@ namespace Service {
         info.region = System::GetRegion();
         info.language = System::GetLanguage();
         info.localFriendCodeSeed = System::GetLocalFriendCodeSeed();
-#if !defined BUILD_CITRA
         info.nandLocalFriendCodeSeed = System::GetNandLocalFriendCodeSeed();
-#endif
         info.macAddress = System::GetMacAddress();
         info.serialNumber = System::GetSerialNumber();
         info.checkDigit =  System::GetCheckDigit(info.serialNumber);
