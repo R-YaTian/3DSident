@@ -139,8 +139,9 @@ namespace Kernel {
     u32 GetDeviceId(void) {
         Result ret = 0;
         u32 id = 0;
+        s32 internalResult = 0;
 
-        if (R_FAILED(ret = AM_GetDeviceId(std::addressof(id)))) {
+        if (R_FAILED(ret = AM_GetDeviceId(std::addressof(internalResult), std::addressof(id)))) {
             Log::Error("%s failed: 0x%x\n", __func__, ret);
             return ret;
         }

@@ -94,14 +94,8 @@ typedef struct {
 } SystemStateInfo;
 
 namespace ACI {
-    Result GetSSID(char *ssid);
     Result GetSecurityMode(acSecurityMode *mode);
     Result GetPassphrase(char *passphrase);
-}
-
-namespace ACTU {
-    Result Initialize(u32 sdkVersion, u32 memSize, Handle handle);
-    Result GetAccountInfo(u8 slot, u32 size, u32 blkId, void *out);
 }
 
 namespace MCUHWC {
