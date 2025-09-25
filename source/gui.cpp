@@ -387,7 +387,8 @@ namespace GUI {
             
             GUI::DrawText(90, 138, 0.45f, guiButtonTesterText, "按 L + R 返回");
 
-            aptCheckHomePressRejected() ? GUI::DrawImageBlend(btnHome, 180, 215, guiSelectorColour) : GUI::DrawImage(btnHome, 180, 215);
+            SystemStateInfo info = Service::GetSystemStateInfo();
+            ((info.rawButtonState >> 1) & 1) == 0? GUI::DrawImageBlend(btnHome, 180, 215, guiSelectorColour): GUI::DrawImage(btnHome, 180, 215);
 
             kHeld & KEY_L? GUI::DrawImageBlend(btnL, 0, 0, guiSelectorColour) : GUI::DrawImage(btnL, 0, 0);
             kHeld & KEY_R? GUI::DrawImageBlend(btnR, 345, 0, guiSelectorColour) : GUI::DrawImage(btnR, 345, 0);
