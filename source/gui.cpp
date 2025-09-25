@@ -408,13 +408,12 @@ namespace GUI {
                 GUI::DrawImageBlend(btnCpad, 8 + (circlePad.dx/30), 55 + (circlePad.dy/-30), guiSelectorColour) : GUI::DrawImage(btnCpad, 8 + (circlePad.dx/30), 55 + (circlePad.dy/-30));
             kHeld & (KEY_CSTICK_LEFT | KEY_CSTICK_RIGHT | KEY_CSTICK_UP | KEY_CSTICK_DOWN) ? 
                 GUI::DrawImageBlend(btnCstick, 330 + (cStick.dx/30), 35 + (cStick.dy/-30), guiSelectorColour) : GUI::DrawImage(btnCstick, 330 + (cStick.dx/30), 35 + (cStick.dy/-30));
-            
+
             kHeld & KEY_DLEFT? GUI::DrawImageBlend(btnDpadh, 9, 129, guiSelectorColour) : GUI::DrawImage(btnDpadh, 9, 129);
             kHeld & KEY_DRIGHT? GUI::DrawImageBlend(btnDpadh, 34, 129, guiSelectorColour, -1.f) : GUI::DrawImage(btnDpadh, 34, 129, -1.f);
             kHeld & KEY_DUP? GUI::DrawImageBlend(btnDpadv, 25, 113, guiSelectorColour) : GUI::DrawImage(btnDpadv, 25, 113);
             kHeld & KEY_DDOWN? GUI::DrawImageBlend(btnDpadv, 25, 138, guiSelectorColour, 1.f, -1.f) : GUI::DrawImage(btnDpadv, 25, 138, 1.f, -1.f);
 
-            
             C2D_SceneBegin(c3dRenderTarget[TARGET_BOTTOM]);
             GUI::DrawImage(cursor, touchX, touchY);
             GUI::End();
