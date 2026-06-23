@@ -39,7 +39,9 @@ namespace Config {
         UsernameBlock usernameBlock;
         
         if (R_FAILED(ret = CFGU_GetConfigInfoBlk2(sizeof(UsernameBlock), 0x000A0000, std::addressof(usernameBlock)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return "未知";
         }
 
@@ -53,7 +55,9 @@ namespace Config {
         BirthdayBlock birthdayBlock;
 
         if (R_FAILED(ret = CFGU_GetConfigInfoBlk2(sizeof(BirthdayBlock), 0x000A0001, std::addressof(birthdayBlock)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return "未知";
         }
         
@@ -61,6 +65,10 @@ namespace Config {
             "一月", "二月", "三月", "四月", "五月", "六月",
             "七月", "八月", "九月", "十月", "十一月", "十二月"
         };
+
+        if (birthdayBlock.month < 1 || birthdayBlock.month > 12) {
+            return "未知";
+        }
 
         static char date[15];
         std::snprintf(date, 15, "%s %02d", months[birthdayBlock.month - 1], birthdayBlock.day);
@@ -72,7 +80,9 @@ namespace Config {
         EulaVersionBlock eulaVersionBlock;
 
         if (R_FAILED(ret = CFGU_GetConfigInfoBlk2(sizeof(EulaVersionBlock), 0x000D0000, std::addressof(eulaVersionBlock)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return "未知";
         }
 
@@ -86,10 +96,12 @@ namespace Config {
         ParentalControlBlock parentalControlBlock;
         
         if (R_FAILED(ret = CFG_GetConfigInfoBlk8(sizeof(ParentalControlBlock), 0x00100001, std::addressof(parentalControlBlock)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return "未知";
         }
-        
+
         static char pin[5];
         std::snprintf(pin, 5, "%u%u%u%u", (parentalControlBlock.pin[0] - 0x30), (parentalControlBlock.pin[1] - 0x30),
             (parentalControlBlock.pin[2] - 0x30), (parentalControlBlock.pin[3] - 0x30));
@@ -101,7 +113,9 @@ namespace Config {
         u8 data[0x200];
 
         if (R_FAILED(ret = CFGU_GetConfigInfoBlk2(sizeof(data), 0x000C0002, data))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return "未知";
         }
 
@@ -115,7 +129,9 @@ namespace Config {
         ParentalControlBlock parentalControlBlock;
 
         if (R_FAILED(ret = CFG_GetConfigInfoBlk8(sizeof(ParentalControlBlock), 0x00100001, std::addressof(parentalControlBlock)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return "未知";
         }
 

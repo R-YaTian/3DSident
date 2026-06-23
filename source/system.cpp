@@ -20,10 +20,15 @@ namespace System {
 
         u8 model = 0;
         if (R_FAILED(ret = CFGU_GetSystemModel(std::addressof(model)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return "未知";
         }
-        
+
+        if (model >= 6) {
+            return "未知";
+        }
         return models[model];
     }
 
@@ -38,13 +43,18 @@ namespace System {
             "KOR",
             "TWN"
         };
-        
+
         u8 region = 0;
         if (R_FAILED(ret = CFGU_SecureInfoGetRegion(std::addressof(region)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return "未知";
         }
 
+        if (region >= 7) {
+            return "未知";
+        }
         return regions[region];
     }
 
@@ -62,10 +72,15 @@ namespace System {
 
         u8 region = 0;
         if (R_FAILED(ret = CFGU_SecureInfoGetRegion(std::addressof(region)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return "未知";
         }
 
+        if (region >= 7) {
+            return "未知";
+        }
         return regions[region];
     }
 
@@ -74,7 +89,9 @@ namespace System {
         u8 isCoppacs = 0;
 
         if (R_FAILED(ret = CFGU_GetRegionCanadaUSA(std::addressof(isCoppacs)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return false;
         }
 
@@ -100,10 +117,15 @@ namespace System {
 
         u8 language = 0;
         if (R_FAILED(ret = CFGU_GetSystemLanguage(std::addressof(language)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return "未知";
         }
 
+        if (language >= 12) {
+            return "未知";
+        }
         return languages[language];
     }
 
@@ -128,11 +150,11 @@ namespace System {
             "snake KMC debugger"
         };
 
-        return runningHW[OS_SharedConfig->running_hw];
-    }
-
-    const char *IsDebugUnit(void) {
-        return OS_KernelConfig->unit_info? "" : "(Debug Unit)";
+        u8 hw = OS_SharedConfig->running_hw;
+        if (hw >= 10) {
+            return "未知";
+        }
+        return runningHW[hw];
     }
 
     u64 GetLocalFriendCodeSeed(void) {
@@ -140,7 +162,9 @@ namespace System {
         u64 seed = 0;
 
         if (R_FAILED(ret = CFGI_GetLocalFriendCodeSeed(std::addressof(seed)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return ret;
         }
 
@@ -177,13 +201,18 @@ namespace System {
         }
         
         if (R_FAILED(ret = FSFILE_Read(handle, std::addressof(bytesread), 0x108, reinterpret_cast<u32 *>(buf), 6))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s(FSFILE_Read) failed: 0x%x\n", __func__, ret);
+#endif
+            FSFILE_Close(handle);
             FS::CloseArchive(nandArchive);
             return "未知";
         }
         
         if (R_FAILED(ret = FSFILE_Close(handle))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s(FSFILE_Close) failed: 0x%x\n", __func__, ret);
+#endif
             FS::CloseArchive(nandArchive);
             return "未知";
         }
@@ -199,7 +228,9 @@ namespace System {
         static u8 serial[15];
         
         if (R_FAILED(ret = CFGI_SecureInfoGetSerialNumber(serial))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return nullptr;
         }
         
@@ -234,7 +265,9 @@ namespace System {
         s32 internalResult = 0;
 
         if (R_FAILED(ret = AM_GetDeviceId(std::addressof(internalResult), std::addressof(id)))) {
+#ifdef BUILD_DEBUG
             Log::Error("%s failed: 0x%x\n", __func__, ret);
+#endif
             return ret;
         }
         

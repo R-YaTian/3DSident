@@ -35,7 +35,8 @@ namespace GUI {
 
     static C2D_Font font = NULL;
     static C3D_RenderTarget *c3dRenderTarget[TARGET_MAX];
-    static C2D_TextBuf guiStaticBuf, guiDynamicBuf, guiSizeBuf;
+    static C2D_TextBuf guiDynamicBuf, guiSizeBuf;
+    static u32 *socBuffer = nullptr;
 
     static const u32 guiBgcolour = C2D_Color32(62, 62, 62, 255);
     static const u32 guiStatusBarColour = C2D_Color32(44, 44, 44, 255);
@@ -58,7 +59,6 @@ namespace GUI {
         c3dRenderTarget[TARGET_TOP] = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
         c3dRenderTarget[TARGET_BOTTOM] = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
 
-        guiStaticBuf  = C2D_TextBufNew(4096);
         guiDynamicBuf  = C2D_TextBufNew(4096);
         guiSizeBuf = C2D_TextBufNew(4096);
 
@@ -70,11 +70,17 @@ namespace GUI {
         ptmuInit();
         cfguInit();
         dspInit();
-        socInit(static_cast<u32 *>(memalign(0x1000, 0x10000)), 0x10000);
+        gspInit();
+        socBuffer = static_cast<u32 *>(memalign(0x1000, 0x10000));
+        socInit(socBuffer, 0x10000);
+        aptSetSleepAllowed(true);
     }
 
     void Exit(void) {
         socExit();
+        free(socBuffer);
+        socBuffer = nullptr;
+        gspExit();
         dspExit();
         cfguExit();
         ptmuExit();
@@ -84,7 +90,6 @@ namespace GUI {
         Textures::Exit();
         C2D_TextBufDelete(guiSizeBuf);
         C2D_TextBufDelete(guiDynamicBuf);
-        C2D_TextBufDelete(guiStaticBuf);
         C2D_FontFree(font);
         C2D_Fini();
         C3D_Fini();
@@ -188,39 +193,35 @@ namespace GUI {
         GUI::DrawItemf(3, "出厂 LFC 种子:", "%010llX", displayInfo? info.localFriendCodeSeed : 0);
         GUI::DrawItemf(4, "从 NAND 获取到的 LFC 种子:", "%s", displayInfo? info.nandLocalFriendCodeSeed : "");
         GUI::DrawItemf(5, "MAC 地址:", displayInfo? info.macAddress : "");
-        GUI::DrawItemf(6, "序列号:", "%s %d", displayInfo? reinterpret_cast<const char *>(info.serialNumber) : "", displayInfo? info.checkDigit : 0);
+        GUI::DrawItemf(6, "序列号:", "%s %d",
+            (displayInfo && info.serialNumber != nullptr) ? reinterpret_cast<const char *>(info.serialNumber) : "",
+            (displayInfo && info.serialNumber != nullptr) ? info.checkDigit : 0);
         GUI::DrawItemf(7, "ECS 设备 ID:", "%llu", displayInfo? info.soapId : 0);
     }
 
     static void BatteryInfoPage(const SystemStateInfo &info) {
-        mcuHwcInit();
         Result ret = 0;
-        u8 percentage = 0, status = 0, voltage = 0, fwVerHigh = 0, fwVerLow = 0, temp = 0;
+        u8 percentage = 0, status = 0, voltage = 0, temp = 0;
         bool connected = false;
 
         ret = MCUHWC_GetBatteryLevel(std::addressof(percentage));
         Result chargeResult = PTMU_GetBatteryChargeState(std::addressof(status));
-        GUI::DrawItemf(1, "电量百分比:", "%3d%% (%s)", R_FAILED(ret)? 0 : (percentage),
-            R_FAILED(chargeResult)? "未知" : (status? "充电中" : "未在充电"));
+        GUI::DrawItemf(1, "电量百分比:", "%3d%% (%s)", R_FAILED(ret) ? 0 : percentage,
+            R_FAILED(chargeResult) ? "未知" : (status ? "充电中" : "未在充电"));
 
         ret = MCUHWC_GetBatteryVoltage(std::addressof(voltage));
         GUI::DrawItemf(2, "电池电压:", "%d (%.1f V)", voltage, 5.f * (static_cast<float>(voltage) / 256.f));
 
         ret = MCUHWC::GetBatteryTemperature(std::addressof(temp));
-        GUI::DrawItemf(3, "电池温度:", "%d °C (%d °F)", 
-            R_FAILED(ret)? 0 : (temp), R_FAILED(ret)? 0 : static_cast<u8>((temp * 9) / 5 + 32));
+        GUI::DrawItemf(3, "电池温度:", "%d °C (%d °F)",
+            R_FAILED(ret) ? 0 : temp, R_FAILED(ret) ? 0 : static_cast<u8>((temp * 9) / 5 + 32));
 
         ret = PTMU_GetAdapterState(std::addressof(connected));
-        GUI::DrawItemf(4, "适配器状态:", R_FAILED(ret)? "未知" : (connected? "已连接" : "未连接"));
+        GUI::DrawItemf(4, "适配器状态:", R_FAILED(ret) ? "未知" : (connected ? "已连接" : "未连接"));
 
-        MCUHWC_GetFwVerHigh(std::addressof(fwVerHigh));
-        MCUHWC_GetFwVerLow(std::addressof(fwVerLow));
-        GUI::DrawItemf(5, "MCU 固件:", "%u.%u", (fwVerHigh - 0x10), fwVerLow);
-
+        GUI::DrawItemf(5, "MCU 固件:", "%u.%u", (info.mcuFwVerHigh - 0x10), info.mcuFwVerLow);
         GUI::DrawItemf(6, "PMIC 厂商代码:", "%x", info.pmicVendorCode);
-
         GUI::DrawItemf(7, "电池厂商代码:", "%x", info.batteryVendorCode);
-        mcuHwcExit();
     }
 
     static void NNIDInfoPage(const NNIDInfo &info, bool &displayInfo) {
@@ -250,8 +251,8 @@ namespace GUI {
         GUI::DrawItem(6, "音频输出:", info.soundOutputMode);
         
         if (isNew3DS) {
-            GUI::DrawItemf(7, "亮度等级:", "%lu (自动亮度模式: %s)", Hardware::GetBrightness(GSPLCD_SCREEN_TOP), 
-                Hardware::GetAutoBrightnessStatus());
+            GUI::DrawItemf(7, "亮度等级:", "%lu (自动亮度模式: %s)", Hardware::GetBrightness(GSPLCD_SCREEN_TOP),
+                info.autoBrightnessStatus);
         }
         else {
             GUI::DrawItemf(7, "亮度等级:", "%lu", Hardware::GetBrightness(GSPLCD_SCREEN_TOP));
@@ -266,7 +267,7 @@ namespace GUI {
             if (info.slot[i]) {
                 C2D_DrawRectSolid(15, 27 + (i * slotDistance), guiTexSize, 370, 70, guiTitleColour);
                 C2D_DrawRectSolid(16, 28 + (i * slotDistance), guiTexSize, 368, 68, guiStatusBarColour);
-                GUI::DrawTextf(20, 30 + (i * slotDistance), guiTexSize, guiTitleColour, "WiFi 位 %d:", i + 1);
+                GUI::DrawTextf(20, 30 + (i * slotDistance), guiTexSize, guiTitleColour, "Wi-Fi 位 %d:", i + 1);
                 GUI::DrawTextf(20, 46 + (i * slotDistance), guiTexSize, guiTitleColour, "SSID: %s", info.ssid[i]);
                 GUI::DrawTextf(20, 62 + (i * slotDistance), guiTexSize, guiTitleColour, "密码: %s (%s)",
                     displayInfo? info.passphrase[i] : "", info.securityMode[i]);
@@ -281,7 +282,9 @@ namespace GUI {
         // SD info
         C2D_DrawRectSolid(15, 115, guiTexSize, 60, 10, guiTitleColour);
         C2D_DrawRectSolid(16, 116, guiTexSize, 58, 8, guiBgcolour);
-        C2D_DrawRectSolid(16, 116, guiTexSize, ((static_cast<double>(info.usedSize[SYSTEM_MEDIATYPE_SD]) / static_cast<double>(info.totalSize[SYSTEM_MEDIATYPE_SD])) * 58.f), 8, guiSelectorColour);
+        if (info.totalSize[SYSTEM_MEDIATYPE_SD] > 0) {
+            C2D_DrawRectSolid(16, 116, guiTexSize, (float)((static_cast<double>(info.usedSize[SYSTEM_MEDIATYPE_SD]) / static_cast<double>(info.totalSize[SYSTEM_MEDIATYPE_SD])) * 58.0), 8, guiSelectorColour);
+        }
         GUI::DrawItem(80, 60, "SD:", "");
         GUI::DrawItem(80, 81, "可用:", info.freeSizeString[SYSTEM_MEDIATYPE_SD]);
         GUI::DrawItem(80, 97, "已用:", info.usedSizeString[SYSTEM_MEDIATYPE_SD]);
@@ -291,7 +294,9 @@ namespace GUI {
         // Nand info
         C2D_DrawRectSolid(215, 115, guiTexSize, 60, 10, guiTitleColour);
         C2D_DrawRectSolid(216, 116, guiTexSize, 58, 8, guiBgcolour);
-        C2D_DrawRectSolid(216, 116, guiTexSize, ((static_cast<double>(info.usedSize[SYSTEM_MEDIATYPE_CTR_NAND]) / static_cast<double>(info.totalSize[SYSTEM_MEDIATYPE_CTR_NAND])) * 58.f), 8, guiSelectorColour);
+        if (info.totalSize[SYSTEM_MEDIATYPE_CTR_NAND] > 0) {
+            C2D_DrawRectSolid(216, 116, guiTexSize, (float)((static_cast<double>(info.usedSize[SYSTEM_MEDIATYPE_CTR_NAND]) / static_cast<double>(info.totalSize[SYSTEM_MEDIATYPE_CTR_NAND])) * 58.0), 8, guiSelectorColour);
+        }
         GUI::DrawItem(280, 60, "CTR Nand:", "");
         GUI::DrawItem(280, 81, "可用:", info.freeSizeString[SYSTEM_MEDIATYPE_CTR_NAND]);
         GUI::DrawItem(280, 97, "已用:", info.usedSizeString[SYSTEM_MEDIATYPE_CTR_NAND]);
@@ -301,7 +306,9 @@ namespace GUI {
         // TWL nand info
         C2D_DrawRectSolid(15, 210, guiTexSize, 60, 10, guiTitleColour);
         C2D_DrawRectSolid(16, 211, guiTexSize, 58, 8, guiBgcolour);
-        C2D_DrawRectSolid(16, 211, guiTexSize, ((static_cast<double>(info.usedSize[SYSTEM_MEDIATYPE_TWL_NAND]) / static_cast<double>(info.totalSize[SYSTEM_MEDIATYPE_TWL_NAND])) * 58.f), 8, guiSelectorColour);
+        if (info.totalSize[SYSTEM_MEDIATYPE_TWL_NAND] > 0) {
+            C2D_DrawRectSolid(16, 211, guiTexSize, (float)((static_cast<double>(info.usedSize[SYSTEM_MEDIATYPE_TWL_NAND]) / static_cast<double>(info.totalSize[SYSTEM_MEDIATYPE_TWL_NAND])) * 58.0), 8, guiSelectorColour);
+        }
         GUI::DrawItem(80, 155, "TWL Nand:", "");
         GUI::DrawItem(80, 176, "可用:", info.freeSizeString[SYSTEM_MEDIATYPE_TWL_NAND]);
         GUI::DrawItem(80, 192, "已用:", info.usedSizeString[SYSTEM_MEDIATYPE_TWL_NAND]);
@@ -311,7 +318,9 @@ namespace GUI {
         // TWL photo info
         C2D_DrawRectSolid(215, 210, guiTexSize, 60, 10, guiTitleColour);
         C2D_DrawRectSolid(216, 211, guiTexSize, 58, 8, guiBgcolour);
-        C2D_DrawRectSolid(216, 211, guiTexSize, ((static_cast<double>(info.usedSize[SYSTEM_MEDIATYPE_TWL_PHOTO]) / static_cast<double>(info.totalSize[SYSTEM_MEDIATYPE_TWL_PHOTO])) * 58.f), 8, guiSelectorColour);
+        if (info.totalSize[SYSTEM_MEDIATYPE_TWL_PHOTO] > 0) {
+            C2D_DrawRectSolid(216, 211, guiTexSize, (float)((static_cast<double>(info.usedSize[SYSTEM_MEDIATYPE_TWL_PHOTO]) / static_cast<double>(info.totalSize[SYSTEM_MEDIATYPE_TWL_PHOTO])) * 58.0), 8, guiSelectorColour);
+        }
         GUI::DrawItem(280, 155, "TWL Photo:", "");
         GUI::DrawItem(280, 176, "可用:", info.freeSizeString[SYSTEM_MEDIATYPE_TWL_PHOTO]);
         GUI::DrawItem(280, 192, "已用:", info.usedSizeString[SYSTEM_MEDIATYPE_TWL_PHOTO]);
@@ -325,7 +334,7 @@ namespace GUI {
         GUI::DrawItemf(3, "已安装票据:", "%lu", info.ticketCount);
 
         u8 wifiStrength = osGetWifiStrength();
-        GUI::DrawItemf(4, "WiFi 信号强度:", "%d (%.0lf%%)", wifiStrength, static_cast<float>(wifiStrength * 33.33));
+        GUI::DrawItemf(4, "Wi-Fi 信号强度:", "%d (%.0lf%%)", wifiStrength, static_cast<float>(wifiStrength * 33.33));
 
         char hostname[128];
         gethostname(hostname, sizeof(hostname));
@@ -337,11 +346,14 @@ namespace GUI {
         touchPosition touch;
         u16 touchX = 0, touchY = 0;
         u8 volume = 0;
-        
+
         const u32 guiButtonTesterText = C2D_Color32(77, 76, 74, 255);
         const u32 guiButtonTesterSliderBorder = C2D_Color32(219, 219, 219, 255);
         const u32 guiButtonTesterSlider = C2D_Color32(241, 122, 74, 255);
-        
+
+        SystemStateInfo sysState = {};
+        int frameCount = 0;
+
         while (enabled) {
             hidScanInput();
             
@@ -355,9 +367,10 @@ namespace GUI {
             
             if (((kHeld & KEY_L) && (kDown & KEY_R)) || ((kHeld & KEY_R) && (kDown & KEY_L))) {
                 aptSetHomeAllowed(true);
+                aptSetSleepAllowed(true);
                 enabled = false;
             }
-            
+
             if (kHeld & KEY_TOUCH)  {
                 hidTouchRead(&touch);
                 touchX = touch.px;
@@ -388,8 +401,11 @@ namespace GUI {
             
             GUI::DrawText(90, 138, 0.45f, guiButtonTesterText, "按 L + R 返回");
 
-            SystemStateInfo info = Service::GetSystemStateInfo();
-            ((info.rawButtonState >> 1) & 1) == 0? GUI::DrawImageBlend(btnHome, 180, 215, guiSelectorColour): GUI::DrawImage(btnHome, 180, 215);
+            if ((frameCount % 4) == 0) {
+                sysState = Service::GetSystemStateInfo();
+            }
+            frameCount++;
+            ((sysState.rawButtonState >> 1) & 1) == 0 ? GUI::DrawImageBlend(btnHome, 180, 215, guiSelectorColour) : GUI::DrawImage(btnHome, 180, 215);
 
             kHeld & KEY_L? GUI::DrawImageBlend(btnL, 0, 0, guiSelectorColour) : GUI::DrawImage(btnL, 0, 0);
             kHeld & KEY_R? GUI::DrawImageBlend(btnR, 345, 0, guiSelectorColour) : GUI::DrawImage(btnR, 345, 0);
@@ -418,7 +434,7 @@ namespace GUI {
     }
 
     void MainMenu(void) {
-        int selection = 0;
+        int selection = 0, prevSelection = -1;
         bool isNew3DS = Utils::IsNew3DS(), displayInfo = true, buttonTestEnabled = false;
 
         const char *items[] = {
@@ -455,6 +471,16 @@ namespace GUI {
             C2D_DrawRectSolid(0, 0, guiTexSize, 400, 20, guiStatusBarColour);
             GUI::DrawTextf(5, (20 - titleHeight) / 2, guiTexSize, guiTitleColour, "3DSident v%d.%d.%dc", VERSION_MAJOR, VERSION_MINOR, VERSION_MICRO);
             GUI::DrawImage(banner, (400 - banner.subtex->width) / 2, ((82 - banner.subtex->height) / 2) + 20);
+
+            if (selection != prevSelection) {
+                if (prevSelection == BATTERY_INFO_PAGE) {
+                    mcuHwcExit();
+                }
+                if (selection == BATTERY_INFO_PAGE) {
+                    mcuHwcInit();
+                }
+                prevSelection = selection;
+            }
 
             switch (selection) {
                 case KERNEL_INFO_PAGE:
@@ -540,12 +566,20 @@ namespace GUI {
 
             if (((kHeld & KEY_L) && (kDown & KEY_R)) || ((kHeld & KEY_R) && (kDown & KEY_L))) {
                 aptSetHomeAllowed(false);
+                aptSetSleepAllowed(false);
                 buttonTestEnabled = true;
             }
 
             if ((kDown & KEY_START) || ((kDown & KEY_A) && (selection == EXIT_PAGE))) {
+                if (selection == BATTERY_INFO_PAGE) {
+                    mcuHwcExit();
+                }
+                prevSelection = -1;
                 break;
             }
+        }
+        if (prevSelection == BATTERY_INFO_PAGE) {
+            mcuHwcExit();
         }
     }
 }
