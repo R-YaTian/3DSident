@@ -77,6 +77,7 @@ namespace GUI {
     }
 
     void Exit(void) {
+        mcuHwcExit();
         socExit();
         free(socBuffer);
         socBuffer = nullptr;
@@ -571,15 +572,8 @@ namespace GUI {
             }
 
             if ((kDown & KEY_START) || ((kDown & KEY_A) && (selection == EXIT_PAGE))) {
-                if (selection == BATTERY_INFO_PAGE) {
-                    mcuHwcExit();
-                }
-                prevSelection = -1;
                 break;
             }
-        }
-        if (prevSelection == BATTERY_INFO_PAGE) {
-            mcuHwcExit();
         }
     }
 }
